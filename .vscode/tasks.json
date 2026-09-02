@@ -1,0 +1,167 @@
+﻿// A task runner that invokes Pester to run all Pester tests under the
+// current workspace folder.
+// NOTE: This Test task runner requires an updated version of Pester (>=5.0.0)
+// in order for the problemMatcher to find failed test information (message, line, file).
+
+{
+  "version": "2.0.0",
+  "windows": {
+    "options": {
+      "shell": {
+        "executable": "C:/Program Files/PowerShell/7/pwsh.exe",
+        "args": [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-Command"
+        ]
+      }
+    }
+  },
+  "linux": {
+    "options": {
+      "shell": {
+        "executable": "/usr/bin/pwsh",
+        "args": [
+          "-NoProfile",
+          "-Command"
+        ]
+      }
+    }
+  },
+  "osx": {
+    "options": {
+      "shell": {
+        "executable": "/usr/local/bin/pwsh",
+        "args": [
+          "-NoProfile",
+          "-Command"
+        ]
+      }
+    }
+  },
+  "tasks": [
+    {
+      "label": "Clean",
+      "type": "shell",
+      "command": "${cwd}/build.ps1 -Task Clean",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build",
+      "type": "shell",
+      "command": "${cwd}/build.ps1 -Task Build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "BuildHelp",
+      "type": "shell",
+      "command": "${cwd}/build.ps1 -Task BuildHelp",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Analyze",
+      "type": "shell",
+      "command": "${cwd}/build.ps1 -Task Analyze",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test",
+      "type": "shell",
+      "command": "${cwd}/build.ps1 -Task Test",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$pester"
+      ]
+    },
+    {
+      "label": "Publish",
+      "type": "shell",
+      "command": "${cwd}/build.ps1 -Task Publish",
+      "problemMatcher": []
+    },
+    {
+      "label": "Install",
+      "type": "shell",
+      "command": "${cwd}/build.ps1 -Task Install",
+      "problemMatcher": []
+    },
+    {
+      "label": "Add script",
+      "type": "shell",
+      "command": "Import-Module PWBuild; Invoke-PSMDTemplate -TemplateName PWScript -OutPath ${input:Folder}",
+      "problemMatcher": [
+        {
+          "owner": "powershell",
+          "fileLocation": [
+            "absolute"
+          ],
+          "severity": "error",
+          "pattern": [
+            {
+              "regexp": "(.+)",
+              "message": 1
+            },
+            {
+              "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
+              "file": 1,
+              "line": 2,
+              "column": 3
+            },
+            {
+              "regexp": "\\+ (.*)",
+              "code": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Add function",
+      "type": "shell",
+      "command": "Import-Module PWBuild; Invoke-PSMDTemplate -TemplateName PWFunction -OutPath ${input:Folder}",
+      "problemMatcher": [
+        {
+          "owner": "powershell",
+          "fileLocation": [
+            "absolute"
+          ],
+          "severity": "error",
+          "pattern": [
+            {
+              "regexp": "(.+)",
+              "message": 1
+            },
+            {
+              "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
+              "file": 1,
+              "line": 2,
+              "column": 3
+            },
+            {
+              "regexp": "\\+ (.*)",
+              "code": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "Folder",
+      "type": "promptString",
+      "description": "Folder where to create new file.",
+      "default": "${workspaceFolder}\\src"
+    }
+  ]
+}

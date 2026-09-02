@@ -1,2 +1,3 @@
-# password.push
+# Module password.push
+
 Password Pusher API wrapper module

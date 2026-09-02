@@ -1,0 +1,41 @@
+{
+  "files.associations": {
+    "*.ps1xml": "xml"     // PowerShell format files
+  },
+  "files.defaultLanguage": "powershell",
+
+  "search.exclude": {
+    "Release": true
+  },
+
+    // AI extensions
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "file": ".github/instructions/copilot-commit-message.instructions.md"
+    },
+  ],
+
+  "[markdown]": {
+    "editor.rulers": [ 76, 78,80, 100 ]
+  },
+
+  "powershell.codeFormatting.preset": "OTBS",
+  "powershell.codeFormatting.pipelineIndentationStyle": "IncreaseIndentationForFirstPipeline",
+  "powershell.scriptAnalysis.settingsPath": "PSScriptAnalyzerSettings.psd1",
+
+  "[powershell]": {
+    "editor.rulers": [ 80, 115 ],
+    "files.trimFinalNewlines": true,
+  },
+
+  "xml.fileAssociations": [
+    {
+      "systemId": "https://raw.githubusercontent.com/PowerShell/PowerShell/master/src/Schemas/Format.xsd",
+      "pattern": "**/*.Format.ps1xml"
+    },
+    {
+      "systemId": "https://raw.githubusercontent.com/PowerShell/PowerShell/master/src/Schemas/Types.xsd",
+      "pattern": "**/*.Types.ps1xml"
+    }
+  ]
+}
