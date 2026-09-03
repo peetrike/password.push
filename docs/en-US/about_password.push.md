@@ -2,65 +2,62 @@
 
 ## about_password.push
 
-```
-ABOUT TOPIC NOTE:
-The first header of the about topic should be the topic name.
-The second header contains the lookup name used by the help system.
-
-IE:
-# Some Help Topic Name
-## SomeHelpTopicFileName
-
-This will be transformed into the text file
-as `about_SomeHelpTopicFileName`.
-Do not include file extensions.
-The second header should have no spaces.
-```
 
 # SHORT DESCRIPTION
 
-Password Pusher API wrapper module
-
-```
-ABOUT TOPIC NOTE:
-About topics can be no longer than 80 characters wide when rendered to text.
-Any topics greater than 80 characters will be automatically wrapped.
-The generated about topic will be encoded UTF-8.
-```
+Password Pusher API wrapper module.
 
 # LONG DESCRIPTION
 
-{{ Long Description Placeholder }}
+This module works as wrapper to Password Pusher API.
 
-## Optional Subtopics
+Password Pusher server allows to save passwords for sharing them with other people.
 
-{{ Optional Subtopic Placeholder }}
+Password Pusher creates encrypted links that self-destruct after viewing.
 
 # EXAMPLES
 
-{{ Code or descriptive examples of how to leverage the functions described. }}
+```powershell
+$secret = Read-Host -AsSecureString -Prompt 'Enter password to share'
+$result = Publish-Password -SecretPassword $secret
+$result | Select-Object -Property url_token, html_url
+```
+
+This example publishes password on https://oss.pwpush.com server and provides
+token and shareable URL that can be sent to person that needs shared password.
+
+Token can later be used to access published password on server.
+
+```powershell
+Connect-PushServer -Server pwpush.com
+$text = get-content -path password.txt
+$result = Publish-Password -Payload $text
+$result.html_url
+```
+
+This example connects to alternate Password Pusher server and publishes
+sensitive text there.
+
+```powershell
+Connect-PushServer -Server myserver.com -Save
+```
+
+This example connects to custom server and saves the server name for future use.
+Saving server allows to use saved server automatically in future sessions
 
 # NOTE
 
-{{ Note Placeholder - Additional information that a user needs to know.}}
-
-# TROUBLESHOOTING NOTE
-
-{{ Troubleshooting Placeholder - Warns users of bugs}}
-
-{{ Explains behavior that is likely to change with fixes }}
+There is difference in functinality between commercial and OSS versions.
+Custom server might also turn off some functionality.
 
 # SEE ALSO
 
-{{ See also placeholder }}
+[Password Pusher server](https://pwpush.com)
 
-{{ You can also list related articles, blogs, and video URLs. }}
+[Password Pusher OSS API](https://oss.pwpush.com/help/api)
 
 # KEYWORDS
 
-{{List alternate names or titles for this topic that readers might use.}}
-
-- {{ Keyword Placeholder }}
-- {{ Keyword Placeholder }}
-- {{ Keyword Placeholder }}
-- {{ Keyword Placeholder }}
+- Password
+- pwpush
+- sharing
