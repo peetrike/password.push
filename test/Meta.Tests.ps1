@@ -27,7 +27,7 @@ Describe 'Text files formatting' -Tags @('MetaTest') {
                     $unicodeFilesCount++
                 }
             }
-            $unicodeFilesCount | Should -Be 0
+            $unicodeFilesCount | Should-Be 0
         }
     }
 
@@ -36,12 +36,12 @@ Describe 'Text files formatting' -Tags @('MetaTest') {
             $totalTabsCount = 0
             $allTextFiles | Foreach-Object {
                 $fileName = $_.FullName
-                (Get-Content $_.FullName -Raw) | Select-String "`t" | Foreach-Object {
+                Select-String -Pattern "`t" -Path $_.FullName | Foreach-Object {
                     Write-Warning "There are tab in $fileName. Use Fixer 'Get-TextFilesList `$pwd | ConvertTo-SpaceIndentation'."
                     $totalTabsCount++
                 }
             }
-            $totalTabsCount | Should -Be 0
+            $totalTabsCount | Should-Be 0
         }
     }
 

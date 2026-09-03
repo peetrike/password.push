@@ -1,4 +1,4 @@
-﻿#Requires -Modules Pester
+﻿#Requires -Modules @{ModuleName = 'Pester'; ModuleVersion = '6.0.0'}
 
 BeforeDiscovery {
     [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -10,10 +10,10 @@ BeforeDiscovery {
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
 
-    $manifestData = Import-PowerShellDataFile -Path $manifestPath
+    $ManifestData = Import-PowerShellDataFile -Path $ManifestPath
 }
 
-Describe "Module $moduleName" -Tags @('MetaTest') {
+Describe "Module $ModuleName" -Tags @('MetaTest') {
     BeforeAll {
         [System.Diagnostics.CodeAnalysis.SuppressMessage(
             'PSUseDeclaredVarsMoreThanAssignments',
@@ -24,138 +24,182 @@ Describe "Module $moduleName" -Tags @('MetaTest') {
             $SuppressImportModule = $true
         . $PSScriptRoot\Shared.ps1
 
-        $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
-        $manifestContent = Import-PowerShellDataFile -Path $manifestPath
+        $testSplat = @{
+            Path          = $ManifestPath
+            WarningAction = 'SilentlyContinue'
+        }
+        $manifest = Test-ModuleManifest @testSplat -ErrorVariable ManifestError
+        $manifestContent = Import-PowerShellDataFile -Path $ManifestPath
     }
     Context 'Manifest file' {
         It 'Is a valid manifest' {
-            {
-                $null = Test-ModuleManifest -Path $manifestPath -Verbose:$false -ErrorAction Stop -WarningAction SilentlyContinue
-            } | Should -Not -Throw
+            $ManifestError.Count | Should-Be 0
         }
 
-        Context 'Required by Publish-Module' {
-            It 'has a valid author' {
-                $manifest.Author | Should -Not -BeNullOrEmpty
+        It 'Has a guid specified' {
+            # Test-ModuleManifest tests for a valid GUID, but not for omitted GUID.
+            $manifestContent.Guid | Should-NotBeNull -Because 'Omitting a GUID generates [guid]::Empty'
+        }
+
+        Context 'Required by Publish-Module' -Tag PSGallery {
+            It 'Has a valid author' {
+                $manifest.Author | Should-NotBeEmptyString
             }
-            It 'has a valid description' {
-                $manifest.Description | Should -Not -BeNullOrEmpty
+
+            It 'Has a valid description' {
+                $manifest.Description | Should-NotBeEmptyString
             }
         }
-        It 'Has a valid name in the manifest' {
-            $manifest.Name | Should -Be $moduleName
+
+        It 'Has a valid manifest name' {
+            $Because = 'The module manifest name should match the module folder name'
+            $manifest.Name | Should-BeString $ModuleName -Because $Because
         }
 
-        It 'Has a valid root module' {
-            $manifest.RootModule | Should -Be ('{0}.psm1' -f $moduleName)
+        It 'Has a valid root module' -Skip:($ManifestData.PowerShellVersion -match '2(\.0)?') {
+            $manifest.RootModule | Should-BeString "$ModuleName.psm1"
         }
 
-        It 'Has valid root module for PowerShell 2.0' -Skip:(([version]$manifestData.PowerShellVersion).Major -ne 2) {
-            $manifestContent.ModuleToProcess | Should -Not -BeNullOrEmpty
+        It 'Has valid root module for PowerShell 2.0' -Skip:($ManifestData.PowerShellVersion.Major -notmatch '2(\.0)?') {
+            $manifestContent.ModuleToProcess | Should-NotBeEmptyString
         }
 
-        It 'Has a valid guid' {
-            {
-                [guid]::Parse($manifest.Guid)
-            } | Should -Not -Throw
+        It 'Has a valid copyright' -Tag PSGallery {
+            $manifest.Copyright | Should-NotBeEmptyString -Because 'Every module should have a copyright statement'
         }
 
-        It 'Has a valid copyright' {
-            $manifest.CopyRight | Should -Not -BeNullOrEmpty
+        It 'CompatiblePSEditions used with supported PowerShell version' -Skip:(-not $ManifestData.CompatiblePSEditions) {
+            $Because = 'CompatiblePSEditions is only supported in PowerShell 5.1 and later'
+            $manifest.PowerShellVersion | Should-BeGreaterThan ([version] '5.0') -Because $Because
+            $manifest.CompatiblePSEditions | Should-Any { $_ -in @('Core', 'Desktop') }
         }
-
-        # Only for DSC modules
-        <# It 'exports DSC resources' {
-            $dscResources = $Manifest.ExportedDscResources
-            @($dscResources).Count | Should -Not -Be 0
-        } #>
 
         Context 'Manifest version' -Tag Version {
-            It 'Has a valid version in the manifest' {
-                $manifest.Version <# -as [Version] #> | Should -Not -BeNullOrEmpty
-            }
+            <# It 'Has a valid version in the manifest' {
+                $manifestContent.ModuleVersion | Should-NotBeEmptyString
+            } #>
+
             It 'Version follows SemVer guidelines' {
                 $manifest.Version.Revision |
-                    Should -Be -1 -Because 'module should follow SemVer guidelines'
+                    Should-Be -1 -Because 'SemVer does not support a revision number'
+                $manifest.Version.Build |
+                    Should-BeGreaterThanOrEqual 0 -Because 'SemVer requires a build/patch number'
             }
-            It 'Prerelease tag follows PSGallery requirements' -Skip:(
-                $manifestData.PrivateData.PSData.Keys -notcontains 'Prerelease'
+
+            It 'Prerelease tag follows PSGallery requirements' -Tag 'PSGallery' -Skip:(
+                $ManifestData.PrivateData.PSData.Keys -notcontains 'Prerelease'
             ) {
-                $manifestContent.PrivateData.PSData.Prerelease -match '-?[0-9A-Za-z]+' |
-                    Should -Be $true -Because 'PSGallery supports only SemVer v1.0 prerelease strings'
-            }
-        }
-
-        Context 'URLs included' {
-            It 'LicenseUri is proper URI' -Skip:($manifestData.PrivateData.PSData.Keys -notcontains 'LicenseUri') {
-                $uri = $manifest.LicenseUri
-                $uri | Should -Not -BeNullOrEmpty
-            }
-            It 'ProjectUri is proper URI' -Skip:($manifestData.PrivateData.PSData.Keys -notcontains 'ProjectUri') {
-                $uri = $manifest.ProjectUri
-                $uri | Should -Not -BeNullOrEmpty
-            }
-        }
-        Context 'Tags' -Tag Tags {
-            BeforeDiscovery {
-                $taglist = $manifestData.PrivateData.PSData.Tags | ForEach-Object {
-                    @{ tag = $_ }
-                }
-            }
-
-            It '"<tag>" should have no spaces in name' -TestCases $tagList {
-                param ($tag)
-                $tag -match ' ' | Should -Be $false
-            }
-
-            It 'Have at least one edition tag' {
-                ($manifest.Tags | Select-Object -Unique) -match '^PSEdition_' |
-                    Should -Not -BeNullOrEmpty
-            }
-            It 'Have at least one OS compatibility tag' {
-                ($manifest.Tags | Select-Object -Unique) -match '^(Windows|Linux|MacOS)$' |
-                    Should -Not -BeNullOrEmpty -Because 'Every module should be compatible with at least one OS'
+                $Because = 'PSGallery supports only SemVer v1.0 prerelease strings'
+                $manifest.PrivateData.PSData.Prerelease |
+                    Should-MatchString '-?[0-9A-Za-z]+' -Because $Because
             }
         }
 
         Context 'ChangeLog compared to manifest' -Tag ChangeLog {
             BeforeAll {
                 $projectRoot = Split-Path -Path $PSScriptRoot -Parent
-                $changelogPath = Join-Path -Path $projectRoot -ChildPath 'CHANGELOG.md'
+                $changeLogPath = Join-Path -Path $projectRoot -ChildPath 'CHANGELOG.md'
 
-                $changelogVersion = $null
-                foreach ($line in (Get-Content $changelogPath)) {
-                    if ($line -match "^## \[(?<Version>(\d+\.){1,2}\d+)(-\w+)?\] \d{4}(-\d{2}){2}") {
-                        $changelogVersion = $matches.Version
+                $changeLogVersion = switch -File $changeLogPath -Regex {
+                    "^## \[(?<Version>(\d+\.){1,2}\d+)(-\w+)?\] \d{4}(-\d{2}){2}" {
+                        $matches.Version
                         break
                     }
                 }
+
+                # $isGitFolder = Test-Path -Path (Join-Path -Path $projectRoot -ChildPath '.git')
             }
+
             It 'Has a valid version in the changelog' {
-                $changelogVersion               | Should -Not -BeNullOrEmpty
-                $changelogVersion -as [Version] | Should -Not -BeNullOrEmpty
+                $changeLogVersion | Should-NotBeEmptyString
+                $changeLogVersion -as [Version] | Should -Not -BeNullOrEmpty
             }
+
             It 'Changelog and manifest versions are the same' {
-                $changelogVersion -as [Version] | Should -Be $manifest.Version
+                $changeLogVersion -as [Version] | Should -Be $manifest.Version
             }
 
-            <# if (Get-Command git.exe -ErrorAction SilentlyContinue) {
-                $script:tagVersion = $null
-                It 'is tagged with a valid version' -Skip {
+            <# Context 'Git tag validation' -Tag 'Git' -Skip:(-not $isGitFolder) {
+                BeforeAll {
                     $thisCommit = git.exe log --decorate --oneline HEAD~1..HEAD
-
                     if ($thisCommit -match 'tag:\s*v?(\d+(?:\.\d+)*)') {
                         $tagVersion = $matches[1]
                     }
+                }
 
-                    $tagVersion               | Should -Not -BeNullOrEmpty
-                    $tagVersion -as [Version] | Should -Not -BeNullOrEmpty
+                It 'is tagged with a valid version' -Skip {
+                    $tagVersion | Should-NotBeEmptyString
+                    $tagVersion -as [version] | Should-HaveType ([version])
                 }
 
                 It 'manifest and tagged version are the same' -Skip {
-                    $script:manifest.Version -as [Version] | Should -Be ( $script:tagVersion -as [Version] )
+                    $manifest.Version | Should-Be ( $tagVersion -as [Version] )
                 }
             } #>
+        }
+
+        Context 'Exported members' {
+            BeforeDiscovery {
+                $Member = @(
+                    @{
+                        Name  = 'Aliases'
+                        Value = $ManifestData.AliasesToExport
+                    }
+                    @{
+                        Name  = 'Cmdlets'
+                        Value = $ManifestData.CmdletsToExport
+                    }
+                    @{
+                        Name  = 'Functions'
+                        Value = $ManifestData.FunctionsToExport
+                    }
+                    @{
+                        Name  = 'Variables'
+                        Value = $ManifestData.VariablesToExport
+                    }
+                )
+            }
+
+            It 'List of <name> to export is valid' -ForEach $Member {
+                $because = 'Using wildcards in exported members is a performance issue'
+                $Value -match '\*' | Should-BeFalsy -Because $because
+                Should-NotBeNull -Actual $Value -Because 'Omitting exported members is a performance issue'
+            }
+
+            It 'Exports DSC resources' -Skip:($ManifestData.Keys -notcontains 'DscResourcesToExport') {
+                $manifest.ExportedDscResources.Count | Should-BeGreaterThan 0
+            }
+        }
+
+        Context 'URLs included' -Tag PSGallery {
+            It 'LicenseUri is proper URI' {
+                $Because = 'Every module should have a license reference'
+                $manifest.LicenseUri.AbsoluteUri | Should-NotBeEmptyString -Because $Because
+            }
+            It 'ProjectUri is proper URI' -Skip:($ManifestData.PrivateData.PSData.Keys -notcontains 'ProjectUri') {
+                $manifest.ProjectUri.AbsoluteUri | Should-NotBeEmptyString
+            }
+        }
+
+        Context 'Tags' -Tag Tags, PSGallery {
+            BeforeDiscovery {
+                $taglist = $manifestData.PrivateData.PSData.Tags | ForEach-Object {
+                    @{ tag = $_ }
+                }
+            }
+
+            It '"<tag>" has no spaces in name' -TestCases $tagList -AllowNullOrEmptyForEach {
+                $tag -match '\s' | Should-BeFalse -Because 'Tags should not contain whitespaces'
+            }
+
+            It 'Has at least one edition tag' {
+                $Because = 'PSEdition tags are used to filter modules by edition in the PSGallery'
+                $manifest.Tags | Select-Object -Unique | Should-Any { $_ -match '^PSEdition_' } -Because $Because
+            }
+            It 'Has at least one OS compatibility tag' {
+                $Because = 'OS compatibility tags are used to filter modules by OS in the PSGallery'
+                $manifest.Tags | Select-Object -Unique | Should-Any { $_ -match '^(Windows|Linux|MacOS)$' } -Because $Because
+            }
         }
     }
 
@@ -175,38 +219,48 @@ Describe "Module $moduleName" -Tags @('MetaTest') {
                     }
                 }
             }
-            $formatList = $manifestData.FormatsToProcess | Get-NameList
-            $typeList = $manifestData.TypesToProcess | Get-NameList
+            $FormatList = $manifestData.FormatsToProcess | Get-NameList
+            $TypeList = $manifestData.TypesToProcess | Get-NameList
             $AssemblyFile = $manifestData.RequiredAssemblies |
                 Where-Object { $_ -like "*.dll" } |
                 Get-NameList
             $AssemblyList = $manifestData.RequiredAssemblies |
                 Where-Object { $_ -notlike "*.dll" } |
                 Get-NameList
+            $ScriptList = $manifestData.ScriptsToProcess | Get-NameList
         }
+
         BeforeAll {
             $moduleRoot = Split-Path $manifestPath -Parent
         }
-        It 'The root module file exists' {
-            $RootModulePath = Join-Path -Path $moduleRoot -ChildPath $manifest.RootModule
-            Test-Path -Path $RootModulePath -PathType Leaf | Should -Be $true
+
+        It 'The root module file exists' -Skip:(-not ($ManifestData.RootModule -or $ManifestData.ModuleToProcess)) {
+            $RootModuleName = $manifest.RootModule
+            $RootModulePath = Join-Path -Path $moduleRoot -ChildPath $RootModuleName
+            Test-Path -Path $RootModulePath -PathType Leaf | Should-BeTrue
         }
 
-        It 'The format file "<name>" exists' -TestCases $formatList {
+        It 'The format file "<name>" exists' -TestCases $formatList -AllowNullOrEmptyForEach {
             $formatPath = Join-Path -Path $moduleRoot -ChildPath $name
             Test-Path $formatPath -PathType Leaf | Should -BeTrue
         }
 
-        It 'The type file "<name>" exists' -TestCases $typeList {
+        It 'The type file "<name>" exists' -TestCases $typeList -AllowNullOrEmptyForEach {
             $typePath = Join-Path -Path $moduleRoot -ChildPath $name
             Test-Path $typePath -PathType Leaf | Should -BeTrue
         }
 
-        It 'The assembly file "<name>" exists' -TestCases $AssemblyFile {
+        It 'The script file "<name>" exists' -TestCases $ScriptList -AllowNullOrEmptyForEach {
+            $scriptPath = Join-Path -Path $moduleRoot -ChildPath $name
+            Test-Path $scriptPath -PathType Leaf | Should -BeTrue
+        }
+
+        It 'The assembly file "<name>" exists' -TestCases $AssemblyFile -AllowNullOrEmptyForEach {
             $assemblyPath = Join-Path -Path $moduleRoot -ChildPath $name
             Test-Path $assemblyPath -PathType Leaf | Should -BeTrue
         }
-        It 'The assembly "<name>" loads from the GAC' -TestCases $assemblyList {
+
+        It 'The assembly "<name>" loads from the GAC' -TestCases $assemblyList -AllowNullOrEmptyForEach {
             { Add-Type -AssemblyName $name } | Should -Not -Throw
         }
     }

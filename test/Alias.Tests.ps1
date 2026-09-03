@@ -19,29 +19,25 @@ BeforeDiscovery {
     }
     if (-not $ExportedAlias) {
         $scriptName = Split-Path -Path $PSScriptRoot -Leaf
-        $Message = '{0}: Module {1} ({2}) does not export any aliases.' -f
-            $scriptName,
-            $ModuleInfo.Name,
-            $ModuleInfo.Version
-        Write-Warning -Message $Message
+        Write-Warning -Message ("{0}: Module {1} ({2}) does not export any aliases." -f $scriptName, $ModuleInfo.Name, $ModuleInfo.Version)
     }
 }
 
 Describe "Exported aliases for module $ModuleName" -Tags @('MetaTest') {
-    Context 'Alias "<name>"' -ForEach $ExportedAlias {
+    Context 'Alias "<name>"' -Foreach $ExportedAlias -AllowNullOrEmptyForEach {
         BeforeEach {
             $aliasToTest = Get-Alias $name -ErrorAction SilentlyContinue
         }
         It 'Exists' {
-            $aliasToTest | Should -Not -BeNullOrEmpty
+            $aliasToTest | Should-HaveType ([Management.Automation.AliasInfo])
         }
 
         It 'Has exported name' {
-            $aliasToTest.Name | Should -Be $Name
+            $aliasToTest.Name | Should-Be $name
         }
 
-        It 'Has value' {
-            $aliasToTest.ResolvedCommandName -or $aliasToTest.Definition | Should -Be $True
+        It 'Points to existing command' {
+            $aliasToTest.ResolvedCommand | Should-NotBeNull
         }
     }
 }
