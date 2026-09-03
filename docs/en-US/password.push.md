@@ -8,7 +8,8 @@ Locale: en-US
 
 # password.push Module
 ## Description
-{{ Fill in the Description }}
+
+Password Pusher API wrapper module.
 
 ## password.push Cmdlets
 ### [Connect-PushServer](Connect-PushServer.md)
