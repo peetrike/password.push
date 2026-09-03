@@ -1,4 +1,5 @@
 ﻿function Get-PasswordUrl {
+    # .EXTERNALHELP password.push-help.xml
     [OutputType([uri])]
     [CmdletBinding()]
     param (

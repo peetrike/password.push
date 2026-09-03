@@ -1,4 +1,5 @@
 ﻿function Read-Password {
+    # .EXTERNALHELP password.push-help.xml
     [Alias('Receive-Password')]
     [CmdletBinding()]
     param (

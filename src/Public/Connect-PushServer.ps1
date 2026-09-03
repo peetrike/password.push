@@ -1,4 +1,5 @@
 ﻿function Connect-PushServer {
+    # .EXTERNALHELP password.push-help.xml
     [CmdletBinding()]
     param (
             [Parameter(Mandatory)]

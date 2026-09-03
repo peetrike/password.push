@@ -1,4 +1,5 @@
 ﻿function Publish-Password {
+    # .EXTERNALHELP password.push-help.xml
     [Alias('Send-Password')]
     [CmdletBinding(
         DefaultParameterSetName = 'Password'
