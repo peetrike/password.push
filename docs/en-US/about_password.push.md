@@ -52,7 +52,7 @@ Custom server might also turn off some functionality.
 
 # SEE ALSO
 
-[Password Pusher server](https://pwpush.com)
+[Password Pusher public server](https://pwpush.com)
 
 [Password Pusher OSS API](https://oss.pwpush.com/help/api)
 
