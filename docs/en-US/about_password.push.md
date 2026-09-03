@@ -30,13 +30,13 @@ Token can later be used to access published password on server.
 
 ```powershell
 Connect-PushServer -Server pwpush.com
-$text = get-content -path password.txt
+$text = get-content -path password.csv
 $result = Publish-Password -Payload $text
 $result.html_url
 ```
 
 This example connects to alternate Password Pusher server and publishes
-sensitive text there.
+group of passwords from .csv file to the server.
 
 ```powershell
 Connect-PushServer -Server myserver.com -Save
