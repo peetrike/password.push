@@ -1,0 +1,3 @@
+﻿@{
+    ApiServer = 'oss.pwpush.com'
+}
