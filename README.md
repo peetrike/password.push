@@ -4,4 +4,4 @@ Password Pusher API wrapper module
 
 ## API documentation
 
-- [API docs](https://pwpush.com/help/api)
+- [API docs](https://oss.pwpush.com/help/api)
