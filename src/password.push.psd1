@@ -4,9 +4,9 @@
 
     GUID              = '4b8c4b27-3f17-422d-a2d6-e9819b618557'
 
-    Author            = 'cpg4285'
-    CompanyName       = 'MyCompany'
-    Copyright         = 'Copyright (c) 2026 MyCompany'
+    Author            = 'Peter Wawa'
+    CompanyName       = 'Telia Eesti'
+    Copyright         = 'Copyright (c) 2026 Telia Eesti'
 
     Description       = 'Password Pusher API wrapper module'
 
@@ -19,7 +19,9 @@
     ) #>
 
     # Modules that must be imported into the global environment prior to importing this module
-    # RequiredModules = @()
+    RequiredModules = @(
+        'Configuration'
+    )
 
     # Assemblies that must be loaded prior to importing this module
     # RequiredAssemblies = @('bin\password.push.dll')
@@ -56,11 +58,11 @@
                 'PSedition_Desktop'
             )
 
-            LicenseUri   = ''
-            ProjectUri   = ''
+            LicenseUri   = 'https://github.com/peetrike/password.push/blob/main/LICENSE'
+            ProjectUri   = 'https://github.com/peetrike/password.push'
             # IconUri      = ''
 
-            ReleaseNotes = ''
+            ReleaseNotes = 'https://github.com/peetrike/password.push/blob/main/CHANGELOG.md'
 
             # Prerelease string of this module
             # Prerelease   = ''
